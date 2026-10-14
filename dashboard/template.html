@@ -1,0 +1,802 @@
+<title>Premier League Scouting Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap">
+<style>
+/* Scouting Lab — match-centre identity.
+   Dark-first "control room": deep blue-black ground, layered slate surfaces,
+   one signal colour (floodlight cyan) for the selected club and the target,
+   a quiet slate for every reference series, and a reserved four-step severity scale.
+   Type: Big Shoulders Display (stadium signage) for headlines and big numbers,
+   IBM Plex Sans for prose, IBM Plex Mono for every stat so columns align. */
+:root{
+  color-scheme:dark;
+  --bg:#0a0e13; --bg-band:#0d1218; --surface:#111820; --surface-2:#172029; --surface-3:#1f2a35;
+  --ink:#e9eef3; --ink-2:#a9b5c2; --ink-3:#7f8c9a; --line:#202a35; --line-2:#2e3b4a; --grid:#18212b;
+  --accent:#4fd6e6; --accent-ink:#031417; --accent-wash:rgba(79,214,230,.12); --accent-glow:rgba(79,214,230,.35);
+  --ref:#8794a6; --ref-wash:rgba(135,148,166,.16);
+  --crit:#ff4d61; --high:#ff8b3d; --mod:#f1c445; --low:#5fb98c;
+  --shadow:0 1px 0 rgba(255,255,255,.03) inset, 0 12px 32px -18px rgba(0,0,0,.8);
+  --f-display:"Big Shoulders Display","Oswald","Arial Narrow",Impact,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+  --s1:var(--accent); --s2:var(--ref);
+  --r:6px;
+}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){
+  color-scheme:light;
+  --bg:#eef1f4; --bg-band:#e6eaee; --surface:#ffffff; --surface-2:#f2f5f7; --surface-3:#e5eaef;
+  --ink:#0b1117; --ink-2:#3f4b58; --ink-3:#5f6b78; --line:#d6dde4; --line-2:#c2ccd6; --grid:#e6ebef;
+  --accent:#007c8c; --accent-ink:#ffffff; --accent-wash:rgba(0,124,140,.10); --accent-glow:rgba(0,124,140,.28);
+  --ref:#7d8a9b; --ref-wash:rgba(125,138,155,.16);
+  --crit:#d32a40; --high:#cf5f12; --mod:#a87e00; --low:#2f8a5c;
+  --shadow:0 1px 2px rgba(11,17,23,.05), 0 10px 28px -20px rgba(11,17,23,.35)}}
+:root[data-theme="light"]{
+  color-scheme:light;
+  --bg:#eef1f4; --bg-band:#e6eaee; --surface:#ffffff; --surface-2:#f2f5f7; --surface-3:#e5eaef;
+  --ink:#0b1117; --ink-2:#3f4b58; --ink-3:#5f6b78; --line:#d6dde4; --line-2:#c2ccd6; --grid:#e6ebef;
+  --accent:#007c8c; --accent-ink:#ffffff; --accent-wash:rgba(0,124,140,.10); --accent-glow:rgba(0,124,140,.28);
+  --ref:#7d8a9b; --ref-wash:rgba(125,138,155,.16);
+  --crit:#d32a40; --high:#cf5f12; --mod:#a87e00; --low:#2f8a5c;
+  --shadow:0 1px 2px rgba(11,17,23,.05), 0 10px 28px -20px rgba(11,17,23,.35)}
+
+/* ---------- Base ---------- */
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.gut{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.inner{max-width:1240px;margin:0 auto}
+h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;font-weight:800;letter-spacing:.005em;line-height:1}
+h2{font-size:clamp(30px,4.2vw,46px);text-transform:uppercase}
+h3{font-size:21px;font-weight:700;text-transform:uppercase;letter-spacing:.02em}
+p{margin:0}
+a{color:var(--accent);text-underline-offset:3px}
+button,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px}
+.muted{color:var(--ink-2)} .small{font-size:13.5px} .tiny{font-size:12px;color:var(--ink-3);line-height:1.45}
+.num,.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.eyebrow{font-family:var(--f-mono);font-size:11.5px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+.eyebrow b{color:var(--accent);font-weight:600}
+
+/* ---------- Masthead ---------- */
+.mast{background:
+  radial-gradient(120% 140% at 85% -20%, var(--accent-wash), transparent 55%),
+  linear-gradient(to bottom, var(--bg-band), var(--bg));
+  border-bottom:1px solid var(--line)}
+.mast .inner{padding-block:30px 34px;display:grid;gap:18px}
+.mast .rowtop{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 20px;align-items:center}
+.brand{display:inline-flex;align-items:center;gap:10px;font-family:var(--f-mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2)}
+.brand .mk{width:22px;height:22px;display:grid;place-items:center;border:1.5px solid var(--accent);border-radius:50%;position:relative}
+.brand .mk::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent-glow)}
+.brand .mk::after{content:"";position:absolute;inset:-1.5px 50% -1.5px auto;width:1.5px;background:var(--accent);transform:translateX(50%)}
+#stamp{font-family:var(--f-mono);font-size:12px;color:var(--ink-3);letter-spacing:.04em}
+.mast h1{font-size:clamp(54px,11vw,128px);font-weight:900;text-transform:uppercase;letter-spacing:-.005em;line-height:.86}
+.mast h1 .k{display:block;font-size:.3em;font-weight:700;letter-spacing:.06em;color:var(--accent);margin-bottom:.35em;line-height:1}
+.mast .lede{max-width:68ch;color:var(--ink-2);font-size:16px}
+
+/* ---------- Control rail (sticky) ---------- */
+.rail{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:saturate(140%) blur(10px);-webkit-backdrop-filter:saturate(140%) blur(10px);border-bottom:1px solid var(--line)}
+.rail .inner{display:flex;flex-wrap:wrap;align-items:stretch;gap:0 18px;min-height:58px}
+.picker{display:flex;align-items:center;gap:10px;padding-block:9px}
+.picker label{font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+.picker select{appearance:none;-webkit-appearance:none;background-color:var(--surface-2);border:1px solid var(--line-2);border-radius:var(--r);padding:8px 36px 8px 12px;font-family:var(--f-display);font-size:19px;font-weight:700;text-transform:uppercase;letter-spacing:.02em;min-width:230px;max-width:100%;cursor:pointer;
+  background-image:linear-gradient(45deg,transparent 50%,var(--accent) 50%),linear-gradient(135deg,var(--accent) 50%,transparent 50%);
+  background-position:calc(100% - 18px) 52%,calc(100% - 13px) 52%;background-size:5px 5px,5px 5px;background-repeat:no-repeat}
+.picker select:hover{border-color:var(--accent)}
+.rail nav{min-width:0;max-width:100%;margin-left:auto;display:flex}
+.steps{display:flex;margin:0;padding:0;list-style:none;align-items:stretch;overflow-x:auto;scrollbar-width:none;max-width:100%}
+.steps::-webkit-scrollbar{display:none}
+.steps a{position:relative;display:flex;align-items:center;gap:8px;padding:0 14px;text-decoration:none;color:var(--ink-3);white-space:nowrap;transition:color .2s}
+.steps a .n{font-family:var(--f-mono);font-size:11px;font-weight:600;color:var(--ink-3);border:1px solid var(--line-2);border-radius:3px;padding:1px 5px;transition:all .2s}
+.steps a .t{font-family:var(--f-display);font-size:17px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.steps a::after{content:"";position:absolute;left:14px;right:14px;bottom:-1px;height:2px;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform .25s ease}
+.steps a:hover{color:var(--ink)}
+.steps a[aria-current="step"]{color:var(--ink)}
+.steps a[aria-current="step"] .n{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.steps a[aria-current="step"]::after{transform:scaleX(1)}
+.steps a.done .n{border-color:var(--accent);color:var(--accent)}
+.steps .sep{align-self:center;width:14px;height:1px;background:var(--line-2)}
+.prog{height:2px;background:transparent;position:absolute;left:0;right:0;bottom:-1px;pointer-events:none}
+.prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,transparent,var(--accent-glow))}
+@media (max-width:760px){.rail .inner{gap:0}.picker{flex:1 1 100%}.picker select{flex:1}.rail nav{flex:1 1 100%;margin:0;border-top:1px solid var(--line)}.steps{margin:0}.steps a{padding:10px 10px}.steps a::after{left:10px;right:10px}.steps .sep{display:none}}
+
+/* ---------- Sections ---------- */
+main{display:block}
+section.step{scroll-margin-top:120px;border-bottom:1px solid var(--line)}
+section.step:nth-of-type(even){background:var(--bg-band)}
+section.step > .inner{padding-block:56px 64px;display:grid;gap:22px}
+.step-head{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 26px;align-items:start}
+.step-head .sn{grid-row:span 4;font-family:var(--f-display);font-weight:900;font-size:clamp(64px,9vw,120px);line-height:.78;color:var(--line-2);letter-spacing:-.02em;font-variant-numeric:tabular-nums;user-select:none}
+.step-head > :not(.sn){grid-column:2}
+.step-head h2{margin-top:6px}
+.step-head .lead{max-width:76ch;color:var(--ink-2);font-size:14.5px;margin-top:8px}
+.step-head ul.seasons{margin:8px 0 0;padding:0;list-style:none;display:grid;gap:6px;max-width:80ch}
+.step-head ul.seasons li{position:relative;padding-left:18px;font-size:13.5px;color:var(--ink-2)}
+.step-head ul.seasons li::before{content:"";position:absolute;left:0;top:.6em;width:8px;height:1.5px;background:var(--accent)}
+.step-head ul.sevkey li{padding-left:0}.step-head ul.sevkey li::before{display:none}.step-head ul.sevkey .sev{min-width:92px}
+.step-head ul.seasons b{color:var(--ink);font-weight:600}
+.step-head .fine{max-width:90ch;margin-top:6px}
+@media (max-width:640px){.step-head{grid-template-columns:1fr}.step-head .sn{grid-row:auto;font-size:56px}.step-head > :not(.sn){grid-column:1}}
+.subhead{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px}
+
+/* ---------- Panels ---------- */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px 18px 16px;min-width:0;box-shadow:var(--shadow);display:grid;gap:6px;align-content:start}
+.panel > h3{font-size:18px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,500px),1fr));gap:16px}
+
+/* ---------- Club hero + scoreboard ---------- */
+#teamTitle{font-size:clamp(34px,5.4vw,62px)}
+#teamTitle .pos{color:var(--accent)}
+#teamSub{font-family:var(--f-mono);font-size:12.5px;color:var(--ink-2);margin-top:10px;letter-spacing:.01em;line-height:1.7}
+.tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+.tile{padding:16px 18px 15px;display:grid;gap:4px;align-content:start;border-left:1px solid var(--line);min-width:0}
+.tile:first-child{border-left:0;background:linear-gradient(160deg,var(--accent-wash),transparent 70%)}
+.tile .l{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+.tile .v{font-family:var(--f-display);font-size:46px;font-weight:800;line-height:.95;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.tile:first-child .v{color:var(--accent)}
+.tile .d{font-size:12.5px;color:var(--ink-2)}
+.tile .v.pos{color:var(--low)} .tile .v.neg{color:var(--crit)}
+@media (max-width:1000px){.tiles{grid-template-columns:repeat(3,minmax(0,1fr))}.tile:nth-child(4){border-left:0}.tile:nth-child(n+4){border-top:1px solid var(--line)}}
+@media (max-width:520px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.tile{border-left:1px solid var(--line)!important;border-top:1px solid var(--line)}.tile:nth-child(odd){border-left:0!important}.tile:nth-child(-n+2){border-top:0}.tile .v{font-size:38px}}
+
+/* ---------- Charts ---------- */
+.chart{width:100%;overflow-x:auto;margin-top:6px}
+.chart svg{display:block;width:100%;height:auto;min-width:420px}
+.chart text{fill:var(--ink-3);font-family:var(--f-mono);font-size:11px}
+.chart text.lab{font-family:var(--f-body);font-size:12px;fill:var(--ink-2)}
+.chart text.strong{fill:var(--ink);font-weight:600}
+.chart text.acc{fill:var(--accent);font-weight:600}
+.chart .gridl{stroke:var(--grid);stroke-width:1}
+.chart .axis{stroke:var(--line-2);stroke-width:1}
+.chart .ref{stroke:var(--ink-3);stroke-width:1;stroke-dasharray:3 4}
+.chart .halo{paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--ink-2);align-items:center}
+.key{display:inline-block;width:14px;height:8px;border-radius:2px;margin-right:7px;vertical-align:1px}
+.key.dash{height:0;border-top:1.5px dashed var(--ink-3);border-radius:0;background:none!important}
+
+/* ---------- Tables ---------- */
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-family:var(--f-mono);font-size:10.5px;font-weight:500;color:var(--ink-3);letter-spacing:.1em;text-transform:uppercase;user-select:none;background:var(--surface);position:relative}
+th[data-sort]{cursor:pointer}
+th[data-sort]:hover{color:var(--ink)}
+th.sorted{color:var(--accent)}
+td.n,th.n{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+td.n{font-size:13.5px}
+tbody tr:not(.rolehead):hover td{background:var(--surface-2)}
+tr.rolehead td{background:var(--surface-2);border-bottom-color:var(--line-2);padding-top:14px;padding-bottom:7px;font-family:var(--f-display);font-weight:700;font-size:16px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink)}
+tr.rolehead td .rc{font-family:var(--f-mono);font-size:11px;font-weight:600;color:var(--accent);border:1px solid var(--accent);border-radius:3px;padding:1px 5px;margin-right:10px;letter-spacing:.04em;vertical-align:2px}
+td.pl{font-weight:600}
+.rbar{display:inline-flex;align-items:center;gap:10px;justify-content:flex-end}
+.rbar .tr{width:70px;height:6px;background:var(--surface-3);border-radius:1px;overflow:hidden;display:inline-block}
+.rbar .tr i{display:block;height:100%;background:var(--accent);border-radius:0 2px 2px 0}
+.rbar .tr i.lo{background:var(--ref)}
+.rmv{font-family:var(--f-mono);font-size:12px}
+.rmv .arr{color:var(--accent)}
+#squadPanel{padding:0;overflow:hidden}
+#squadPanel .tablewrap{max-width:100%}
+
+/* ---------- Segmented season switch ---------- */
+.seg{display:inline-flex;width:max-content;max-width:100%;justify-self:start;border:1px solid var(--line-2);border-radius:var(--r);overflow:hidden;background:var(--surface)}
+.seg button{font-family:var(--f-mono);font-size:12px;font-weight:500;letter-spacing:.04em;border:0;border-left:1px solid var(--line-2);background:transparent;color:var(--ink-2);padding:9px 16px;cursor:pointer;transition:background .15s,color .15s}
+.seg button:first-child{border-left:0}
+.seg button:hover{color:var(--ink);background:var(--surface-2)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.segrow{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px}
+
+/* ---------- Severity system ---------- */
+.sev{--c:var(--ink-3);display:inline-flex;align-items:center;gap:8px;font-family:var(--f-mono);font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--c)}
+.sev .meter{display:inline-flex;gap:2px;align-items:flex-end}
+.sev .meter i{width:4px;background:var(--line-2);border-radius:1px}
+.sev .meter i:nth-child(1){height:6px}.sev .meter i:nth-child(2){height:9px}.sev .meter i:nth-child(3){height:12px}.sev .meter i:nth-child(4){height:15px}
+.sev.crit{--c:var(--crit)} .sev.high{--c:var(--high)} .sev.mod{--c:var(--mod)} .sev.low{--c:var(--low)}
+.sev.crit .meter i,.sev.high .meter i:nth-child(-n+3),.sev.mod .meter i:nth-child(-n+2),.sev.low .meter i:nth-child(1){background:var(--c)}
+
+.board{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.board a{--c:var(--low);display:grid;gap:8px;padding:12px 14px 13px;background:var(--surface);text-decoration:none;color:var(--ink);position:relative;transition:background .15s}
+.board a::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:var(--c)}
+.board a:hover{background:var(--surface-2)}
+.board a.crit{--c:var(--crit);background:color-mix(in srgb,var(--crit) 11%,var(--surface))}
+.board a.high{--c:var(--high);background:color-mix(in srgb,var(--high) 7%,var(--surface))}
+.board a.mod{--c:var(--mod)} .board a.low{--c:var(--low)}
+.board .rk{font-family:var(--f-mono);font-size:10.5px;color:var(--ink-3);letter-spacing:.08em}
+.board .ro{font-family:var(--f-display);font-size:30px;font-weight:800;line-height:.9;letter-spacing:.01em}
+.board .tag{position:absolute;top:11px;right:12px;font-family:var(--f-mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;padding:1px 5px;border-radius:3px;border:1px solid var(--line-2);color:var(--ink-3)}
+.board .tag.sign{border-color:var(--c);color:var(--c)}
+.board .rn{font-size:12px;color:var(--ink-2);line-height:1.25}
+
+.needs{display:grid;gap:12px}
+.need{--c:var(--low);display:grid;grid-template-columns:200px minmax(0,1fr);background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);scroll-margin-top:130px}
+.need.crit{--c:var(--crit);border-color:color-mix(in srgb,var(--crit) 45%,var(--line))}
+.need.high{--c:var(--high);border-color:color-mix(in srgb,var(--high) 30%,var(--line))}
+.need.mod{--c:var(--mod)}
+.need .side{padding:18px 18px 18px;display:grid;gap:10px;align-content:start;border-right:1px solid var(--line);background:linear-gradient(170deg,color-mix(in srgb,var(--c) 14%,transparent),transparent 75%)}
+.need.low .side,.need.mod .side{background:linear-gradient(170deg,color-mix(in srgb,var(--c) 7%,transparent),transparent 75%)}
+.need .rkn{font-family:var(--f-display);font-size:56px;font-weight:900;line-height:.8;color:var(--c);font-variant-numeric:tabular-nums}
+.need .nm{font-family:var(--f-display);font-size:22px;font-weight:800;text-transform:uppercase;line-height:1;letter-spacing:.02em}
+.need .body{padding:18px 22px 18px;display:grid;gap:10px;font-size:14.5px;min-width:0}
+.need .hl{font-family:var(--f-display);font-weight:700;font-size:25px;line-height:1.08;text-transform:uppercase;letter-spacing:.01em;text-wrap:balance}
+.need .flags{margin:0;padding:0;list-style:none;display:grid;gap:7px;color:var(--ink)}
+.need .flags li{position:relative;padding-left:20px;max-width:88ch}
+.need .flags li::before{content:"";position:absolute;left:2px;top:.62em;width:7px;height:7px;border:1.5px solid var(--ink-3);border-radius:1px;transform:rotate(45deg)}
+.need .ctx{color:var(--ink-2);font-size:13.5px;display:flex;gap:10px;align-items:baseline;max-width:90ch}
+.need .ctx::before{content:"Team data";flex:none;font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:2px 6px;border-radius:3px;border:1px solid var(--line-2);color:var(--ink-3)}
+.need .ctx.bad::before{color:var(--crit);border-color:color-mix(in srgb,var(--crit) 50%,transparent)}
+.need .ctx.good::before{color:var(--low);border-color:color-mix(in srgb,var(--low) 50%,transparent)}
+.need .act{margin-top:2px;padding:12px 14px;border-radius:4px;background:var(--surface-2);border:1px solid var(--line);font-size:14.5px;display:grid;gap:3px}
+.need .act b{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:600}
+@media (max-width:700px){.need{grid-template-columns:1fr}.need .side{border-right:0;border-bottom:1px solid var(--line);grid-template-columns:auto 1fr;align-items:end;gap:6px 14px}.need .rkn{grid-row:span 2;font-size:48px}.need .hl{font-size:22px}}
+
+/* ---------- Targets ---------- */
+.targets{display:grid;gap:40px}
+.tgroup{display:grid;gap:14px}
+.ghead{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 16px;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--line-2)}
+.ghead .gn{grid-row:span 2;min-width:2.1ch;font-family:var(--f-display);font-size:52px;font-weight:900;line-height:.8;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.ghead h3{font-size:clamp(24px,3vw,32px);display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center}
+.ghead .ctxl{font-size:13.5px;color:var(--ink-2)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,350px),1fr));gap:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);display:grid;align-content:start;min-width:0;box-shadow:var(--shadow);overflow:hidden;transition:border-color .2s,transform .2s}
+.card:hover{border-color:var(--line-2);transform:translateY(-2px)}
+.card.first{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.card .top{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:16px 18px 14px;align-items:start;border-bottom:1px solid var(--line)}
+.card.first .top{background:linear-gradient(160deg,var(--accent-wash),transparent 70%)}
+.card .rank{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+.card.first .rank{color:var(--accent)}
+.card h4{margin:4px 0 2px;font-family:var(--f-display);font-size:27px;font-weight:800;text-transform:uppercase;line-height:.98;letter-spacing:.01em;text-wrap:balance}
+.card .sub{font-size:13px;color:var(--ink-2)}
+.card .scorebox{text-align:right;display:grid;justify-items:end;gap:4px}
+.card .score{font-family:var(--f-display);font-size:50px;font-weight:900;line-height:.82;font-variant-numeric:tabular-nums}
+.card.first .score{color:var(--accent)}
+.card .sbar{width:64px;height:3px;background:var(--surface-3);border-radius:2px;overflow:hidden}
+.card .sbar i{display:block;height:100%;background:var(--accent)}
+.card .slab{font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+.spec{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-bottom:1px solid var(--line)}
+.spec > div{padding:10px 14px 11px;border-left:1px solid var(--line);border-top:1px solid var(--line);display:grid;gap:2px;min-width:0}
+.spec > div:nth-child(3n+1){border-left:0}
+.spec > div:nth-child(-n+3){border-top:0}
+.spec dt{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+.spec dd{margin:0;font-family:var(--f-mono);font-size:13.5px;font-weight:500;font-variant-numeric:tabular-nums;color:var(--ink);overflow-wrap:anywhere}
+.spec dd .up{color:var(--accent)}
+.spec .wide{grid-column:1/-1;border-left:0}
+.spec .warnc dd{color:var(--mod)}
+.card .cmpw{padding:14px 18px 12px;display:grid;gap:10px;border-bottom:1px solid var(--line)}
+.cmp{display:grid;grid-template-columns:minmax(96px,auto) 1fr;gap:9px 12px;font-size:12.5px;align-items:center}
+.cmp .lbl{color:var(--ink-2);line-height:1.2}
+.cmp .pair{display:grid;gap:3px;position:relative}
+.cmp .b{height:6px;border-radius:0 2px 2px 0;display:block}
+.cmp .b.t{background:var(--accent)} .cmp .b.r{background:var(--ref);opacity:.75}
+.cmp .vals{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:11px;color:var(--ink-3)}
+.cmp .vals b{color:var(--ink);font-weight:600}
+.card .rep{padding:14px 18px 16px;display:grid;gap:8px}
+.report{font-size:14px;color:var(--ink);line-height:1.6}
+.card .rep .eyebrow{font-size:10px}
+.note{background:var(--surface);border:1px dashed var(--line-2);border-radius:var(--r);padding:16px 18px;font-size:14px;color:var(--ink-2)}
+details.more{border-top:1px solid var(--line-2);padding-top:8px}
+details.more > summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:12px;padding:14px 0;font-family:var(--f-display);font-size:22px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;color:var(--ink)}
+details.more > summary::-webkit-details-marker{display:none}
+details.more > summary::before{content:"+";display:grid;place-items:center;width:28px;height:28px;border:1px solid var(--line-2);border-radius:4px;font-family:var(--f-mono);font-size:16px;color:var(--accent);transition:transform .2s}
+details.more[open] > summary::before{content:"–"}
+details.more > summary:hover{color:var(--accent)}
+details.more[open] > .tgroup{margin-top:24px}
+
+/* ---------- Method ---------- */
+.method ul{margin:0;padding:0;list-style:none;display:grid;gap:8px}
+.method ul li{position:relative;padding-left:18px}
+.method ul li::before{content:"";position:absolute;left:0;top:.65em;width:8px;height:1.5px;background:var(--ink-3)}
+.big-stat{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.big-stat .v{font-family:var(--f-display);font-size:58px;font-weight:900;line-height:.85;color:var(--accent);font-variant-numeric:tabular-nums}
+.wbar{display:inline-block;width:80px;height:5px;background:var(--surface-3);border-radius:1px;vertical-align:middle;margin-left:10px;overflow:hidden}
+.wbar i{display:block;height:100%;background:var(--accent)}
+footer.foot{padding-block:28px 48px;color:var(--ink-3);font-family:var(--f-mono);font-size:11.5px;letter-spacing:.04em}
+
+/* ---------- Tooltip ---------- */
+#tip{position:fixed;pointer-events:none;z-index:30;background:var(--surface-3);color:var(--ink);border:1px solid var(--line-2);box-shadow:0 10px 30px -10px rgba(0,0,0,.6);font-size:12.5px;padding:8px 10px;border-radius:4px;max-width:280px;line-height:1.45;opacity:0;transition:opacity .1s;font-family:var(--f-body)}
+
+/* ---------- Motion ---------- */
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.anim > *{animation:rise .45s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(var(--i,0) * 45ms)}
+@media (prefers-reduced-motion:reduce){
+  .anim > *{animation:none}
+  #tip,.steps a,.steps a::after,.card,.seg button{transition:none}
+  .card:hover{transform:none}
+  html{scroll-behavior:auto}
+}
+html{scroll-behavior:smooth}
+</style>
+
+<header class="mast gut">
+  <div class="inner">
+    <div class="rowtop">
+      <span class="brand"><span class="mk" aria-hidden="true"></span>Recruitment model</span>
+      <span id="stamp"></span>
+    </div>
+    <h1><span class="k">Premier League 2026/27</span>Scouting Lab</h1>
+    <p class="lede">A data-driven recruitment model for every club in the 2026/27 Premier League. It measures how each team plays, rates every player per 90 minutes against others in the same role, finds where the squad falls short of the league, and ranks players who would close that gap within what the club has shown it can spend.</p>
+  </div>
+</header>
+
+<div class="rail gut">
+  <div class="inner">
+    <div class="picker">
+      <label for="club">Club</label>
+      <select id="club"></select>
+    </div>
+    <nav aria-label="Investigation steps">
+      <ol class="steps crumbs" id="steps">
+        <li style="display:contents"><a href="#team"><span class="n">01</span><span class="t">Team</span></a></li>
+        <li class="sep" aria-hidden="true"></li>
+        <li style="display:contents"><a href="#squad"><span class="n">02</span><span class="t">Players</span></a></li>
+        <li class="sep" aria-hidden="true"></li>
+        <li style="display:contents"><a href="#needs"><span class="n">03</span><span class="t">Gaps</span></a></li>
+        <li class="sep" aria-hidden="true"></li>
+        <li style="display:contents"><a href="#targets"><span class="n">04</span><span class="t">Targets</span></a></li>
+        <li class="sep" aria-hidden="true"></li>
+        <li style="display:contents"><a href="#method"><span class="n">05</span><span class="t">Method</span></a></li>
+      </ol>
+    </nav>
+  </div>
+  <div class="prog" aria-hidden="true"><i id="prog"></i></div>
+</div>
+
+<main>
+  <section class="step gut" id="team">
+    <div class="inner">
+      <div class="step-head"><span class="sn" aria-hidden="true">01</span><span class="eyebrow"><b>Step 1</b> · How the team has played</span><h2 id="teamTitle"></h2><p id="teamSub"></p></div>
+      <div class="tiles anim" id="tiles"></div>
+      <div class="grid2">
+        <div class="panel"><h3>Expected goals by gameweek</h3><p class="tiny">Columns: xG created and conceded per match. Chips: result and score. Dashed lines: average over these games.</p><div class="legend" style="margin-top:6px"><span><i class="key" style="background:var(--s1)"></i>xG for</span><span><i class="key" style="background:var(--s2)"></i>xG against</span><span><i class="key dash"></i>Average</span></div><div class="chart" id="gwChart"></div></div>
+        <div class="panel"><h3>Points per game, season by season</h3><p class="tiny">2020/21–2024/25 from your match history file. 2025/26 and 2026/27 from FPL Core Insights. Gaps are seasons outside the Premier League. Dashed line: league average this season.</p><div class="chart" id="histChart"></div></div>
+      </div>
+      <div class="grid2">
+        <div class="panel"><h3>League rank on each team measure</h3><p class="tiny">1 = best in the league. Conceding measures are ranked so that conceding less is better. Shaded: top four and bottom six (15th or lower, the threshold the gap check uses).</p><div class="chart" id="rankChart"></div></div>
+        <div class="panel"><h3>Chance quality, all 20 clubs</h3><p class="tiny">xG created vs conceded per game. Up and right is better. Selected club highlighted; dashed lines mark the league average.</p><div class="chart" id="leagueChart"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="step gut" id="squad">
+    <div class="inner">
+      <div class="step-head"><span class="sn" aria-hidden="true">02</span><span class="eyebrow"><b>Step 2</b> · How the current players are performing</span><h2>Squad ratings by role</h2>
+        <p class="lead">Rating 0–100: each player's per-90 numbers as percentiles against everyone whose main role is the same, weighted by what matters in that role, and pulled toward average when minutes are low. 2025/26 minutes count at 60%. Roles follow each player's listed position on Transfermarkt.</p>
+        <ul class="seasons">
+          <li><b>Every column follows the season picked below.</b> "Both seasons" blends the two, with last season's minutes counting at 60%; this is the rating the gaps and targets use.</li>
+          <li><b>2026/27 so far</b> covers six gameweeks, so ratings there are pulled strongly toward average.</li>
+          <li><b>Match rating</b> is an independent provider's average from your uploaded 2025/26 file, so it appears only under 2025/26. There is no provider rating for this season in the data.</li>
+        </ul></div>
+      <div class="segrow">
+        <div class="seg" role="group" aria-label="Season for starts, goals, assists and clean sheets" id="seasonSeg">
+          <button data-s="cur" aria-pressed="true">2026/27 so far</button><button data-s="prev" aria-pressed="false">2025/26</button><button data-s="2s" aria-pressed="false">Both seasons</button>
+        </div>
+        <span class="tiny">Click a column heading to sort; click again to reverse, a third time to regroup by role.</span>
+      </div>
+      <div class="panel" id="squadPanel"><div class="tablewrap"><table id="squadTable"></table></div></div>
+    </div>
+  </section>
+
+  <section class="step gut" id="needs">
+    <div class="inner">
+      <div class="step-head"><span class="sn" aria-hidden="true">03</span><span class="eyebrow"><b>Step 3</b> · Where the squad falls short</span><h2>Which positions need work</h2>
+        <p class="lead">Each position is checked for six concrete problems: nobody playing there regularly, someone filling in out of position, a starter in the bottom third of the league for that position, a starter aged 31 or over (34 for goalkeepers, who peak later), too few above-average backups, and the position group ranking 15th or lower among the 20 clubs.</p>
+        <ul class="seasons sevkey">
+          <li><span class="sev crit"><span class="meter"><i></i><i></i><i></i><i></i></span>Critical</span> <span>the position is empty or covered out of position, plus at least one other problem.</span></li>
+          <li><span class="sev high"><span class="meter"><i></i><i></i><i></i><i></i></span>High</span> <span>two or more problems, or the position is empty or covered.</span></li>
+          <li><span class="sev mod"><span class="meter"><i></i><i></i><i></i><i></i></span>Moderate</span> <span>one problem.</span> &nbsp; <span class="sev low"><span class="meter"><i></i><i></i><i></i><i></i></span>Low</span> <span>none.</span></li>
+        </ul>
+        <p class="lead">A position is marked <b>Sign</b> when a new player would fix it: every Critical or High position, and a Moderate one only when the problem is the level of a starter. Age or thin cover on its own is a plan for later, not a reason to buy now, so those positions are marked <b>Hold</b> and get no targets.</p>
+        <p class="tiny fine">Starters are the players with the most minutes this season. The number of starters per position follows how the club has lined up (back three or four, two or three central midfielders, one or two strikers), and the holding midfielder is whichever regular central midfielder plays the most defensive game. Each player counts in one position only. Percentiles compare a player with the league's regulars in that position (450+ minutes) over both seasons. "Nth strongest of 20" compares the club's starters in that position with the starters at every other club.</p></div>
+      <nav class="board anim" id="sevBoard" aria-label="Positions by priority"></nav>
+      <div class="needs anim" id="needList"></div>
+    </div>
+  </section>
+
+  <section class="step gut" id="targets">
+    <div class="inner">
+      <div class="step-head"><span class="sn" aria-hidden="true">04</span><span class="eyebrow"><b>Step 4</b> · Who would take the squad to the next level</span><h2>Ranked targets for every position marked Sign</h2>
+        <p class="lead">Candidates must out-rate the weakest current starter in the role by at least 3 points, rank in at least the 60th percentile for the role, have 900+ league minutes over the two seasons and minutes this season, and be affordable: Transfermarkt market value no higher than the average of the club's three most valuable players plus 25% (FPL price is the fallback when a player has no value). A contract with 18 months or less left makes a sale more likely. Clubs rarely sign regulars from clearly stronger clubs, so those are scored down or removed. One player can only join one club, so shortlists are drawn up like a draft: each round, every position marked Sign takes its best remaining candidate, the most urgent needs first, and no player appears on more than two shortlists. The number of positions differs from club to club.</p></div>
+      <div class="targets" id="targetList"></div>
+    </div>
+  </section>
+
+  <section class="step method gut" id="method">
+    <div class="inner">
+      <div class="step-head"><span class="sn" aria-hidden="true">05</span><span class="eyebrow"><b>Method</b> · Validation and limits</span><h2>How far to trust the model</h2></div>
+      <div class="grid2">
+        <div class="panel"><h3>Independent check against 2025/26 match ratings</h3><div class="big-stat"><span class="v" id="valRho"></span><span class="tiny">Spearman rank correlation, all roles</span></div><p class="tiny" id="valSub"></p><div class="chart" id="valChart"></div><div class="tablewrap"><table id="valTable"></table></div></div>
+        <div class="panel" style="gap:14px">
+          <h3>Target score</h3><div class="tablewrap"><table id="scoreTable"></table></div>
+          <h3>Limits</h3>
+          <ul class="small muted">
+            <li>The six 2026/27 gameweeks are a small sample, which is why last season is blended in.</li>
+            <li>Ages, market values and contracts come from the Transfermarkt dataset you uploaded, which was last refreshed during 2025/26, so values lag this season's form. About 93% of current Premier League players link by name; the rest (mostly newly promoted squads) fall back to FPL price and a neutral age score.</li>
+            <li>Candidates come only from Premier League squads. Players abroad need a comparable per-match dataset.</li>
+            <li>Each player is offered to at most two clubs, the most urgent needs first, so a club further down the draft can be left with weaker options or none.</li>
+            <li>Roles follow each player's listed Transfermarkt position. The few players without one get a role from k-means clustering on playing style within their FPL position.</li>
+            <li>Reports are written from the same facts shown on each card. Stats in the reports and comparison bars are plain per-90 numbers over 2025/26 and 2026/27 combined; the rating itself weights last season at 60% and adjusts defensive actions for possession.</li>
+          </ul>
+          <p class="tiny">Data: <a href="https://github.com/olbauday/FPL-Core-Insights" target="_blank" rel="noopener">FPL Core Insights</a> (match and player-match stats, 2025/26 and 2026/27), plus uploaded 2025/26 season stats, 2000–2025 results and <a href="https://www.kaggle.com/datasets/davidcariboo/player-scores" target="_blank" rel="noopener">Transfermarkt player profiles</a>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+<footer class="foot gut"><div class="inner">Premier League Scouting Lab · Python, Pandas and the OpenAI API · no transfer rumours, every figure traceable to the data</div></footer>
+<div id="tip" role="tooltip"></div>
+
+<script>
+const DATA = /*__DATA__*/null;
+const $ = s => document.querySelector(s);
+const fmt = (v, d = 1) => v == null || Number.isNaN(v) ? "–" : Number(v).toFixed(d);
+const sign = (v, d = 1) => v == null ? "–" : (v > 0 ? "+" : "") + Number(v).toFixed(d);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const ROLE = DATA.role_names, LBL = DATA.stat_labels, TEAMS = DATA.team_names;
+const ROLE_ORDER = ["GK","CB","FB","DM","CM","AM/W","ST"];
+const NS = "http://www.w3.org/2000/svg";
+const mean = a => a.reduce((s, v) => s + v, 0) / a.length;
+const stagger = root => [...root.children].forEach((c, i) => c.style.setProperty("--i", Math.min(i, 12)));
+
+// Tooltip
+const tip = $("#tip");
+document.addEventListener("pointerover", e => {
+  const t = e.target.closest("[data-tip]"); if (!t) return;
+  tip.innerHTML = t.getAttribute("data-tip"); tip.style.opacity = 1;
+});
+document.addEventListener("pointermove", e => {
+  if (tip.style.opacity !== "1") return;
+  const x = Math.max(8, Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8));
+  const y = Math.max(8, e.clientY - tip.offsetHeight - 12);
+  tip.style.left = x + "px"; tip.style.top = y + "px";
+});
+document.addEventListener("pointerout", e => { if (e.target.closest("[data-tip]")) tip.style.opacity = 0; });
+
+function svg(w, h, label) { const s = document.createElementNS(NS, "svg"); s.setAttribute("viewBox", `0 0 ${w} ${h}`); s.setAttribute("role", "img"); if (label) s.setAttribute("aria-label", label); return s; }
+function el(tag, attrs, parent, text) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (text != null) e.textContent = text;
+  parent && parent.appendChild(e); return e;
+}
+// Column with a rounded data end and square baseline.
+function colPath(x, y0, w, y1) {
+  const h = y0 - y1, r = Math.min(3, Math.abs(h), w / 2);
+  if (h <= 0.5) return `M${x},${y0}h${w}v-0.5h${-w}z`;
+  return `M${x},${y0}V${y1 + r}Q${x},${y1} ${x + r},${y1}H${x + w - r}Q${x + w},${y1} ${x + w},${y1 + r}V${y0}Z`;
+}
+const niceMax = v => { const s = [0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10]; return s.find(x => x >= v) || Math.ceil(v); };
+
+// --- Step 1 charts ---------------------------------------------------------
+function gwChart(club) {
+  const tr = club.trend, W = 540, H = 250, L = 34, R = 64, T = 14, B = 52;
+  const max = niceMax(Math.max(...tr.flatMap(d => [d.expected_goals_xg, d.opp_expected_goals_xg])));
+  const s = svg(W, H, "xG for and against by gameweek"), y = v => T + (H - T - B) * (1 - v / max);
+  const step = max <= 1 ? 0.25 : max <= 3 ? 0.5 : 1;
+  for (let v = 0; v <= max + 1e-9; v += step) { el("line", {x1: L, x2: W - R, y1: y(v), y2: y(v), class: "gridl"}, s); el("text", {x: L - 8, y: y(v) + 4, "text-anchor": "end"}, s, fmt(v, step < 1 ? (step === 0.25 ? 2 : 1) : 0)); }
+  const band = (W - L - R) / tr.length, bw = Math.min(20, band / 3.2);
+  tr.forEach((d, i) => {
+    const cx = L + band * i + band / 2, opp = TEAMS[d.opponent_code] || "";
+    const res = d.points === 3 ? "W" : d.points === 1 ? "D" : "L";
+    const tipTxt = `<b>GW${d.gameweek}</b> ${d.is_home ? "vs" : "at"} ${esc(opp)}<br>${res} ${d.goals_for}–${d.goals_against}<br>xG ${fmt(d.expected_goals_xg,2)} – ${fmt(d.opp_expected_goals_xg,2)}`;
+    el("rect", {x: cx - band / 2 + 2, y: T, width: band - 4, height: H - T - B, fill: "transparent", "data-tip": tipTxt}, s);
+    el("path", {d: colPath(cx - bw - 1.5, y(0), bw, y(d.expected_goals_xg)), fill: "var(--s1)", "data-tip": tipTxt}, s);
+    el("path", {d: colPath(cx + 1.5, y(0), bw, y(d.opp_expected_goals_xg)), fill: "var(--s2)", "data-tip": tipTxt}, s);
+    el("text", {x: cx, y: H - B + 16, "text-anchor": "middle"}, s, `GW${d.gameweek}`);
+    const chipW = 44;
+    el("rect", {x: cx - chipW / 2, y: H - B + 24, width: chipW, height: 18, rx: 3, fill: res === "W" ? "var(--accent-wash)" : "transparent", stroke: res === "W" ? "var(--accent)" : res === "L" ? "var(--line-2)" : "var(--line-2)", "stroke-width": 1}, s);
+    el("text", {x: cx, y: H - B + 37, "text-anchor": "middle", class: res === "W" ? "acc" : "strong"}, s, `${res} ${d.goals_for}–${d.goals_against}`);
+  });
+  el("line", {x1: L, x2: W - R, y1: y(0), y2: y(0), class: "axis"}, s);
+  const aF = mean(tr.map(d => d.expected_goals_xg)), aA = mean(tr.map(d => d.opp_expected_goals_xg));
+  const close = Math.abs(y(aF) - y(aA)) < 14, off = close ? (aF >= aA ? [-5, 9] : [9, -5]) : [0, 0];
+  [[aF, "var(--s1)", "for", off[0], "acc"], [aA, "var(--ref)", "agst", off[1], "strong"]].forEach(([v, c, lab, o, cls]) => {
+    el("line", {x1: L, x2: W - R, y1: y(v), y2: y(v), stroke: c, "stroke-width": 1.2, "stroke-dasharray": "4 4"}, s);
+    el("text", {x: W - R + 6, y: y(v) + 4 + o, class: cls}, s, `${fmt(v, 2)} ${lab}`);
+  });
+  $("#gwChart").replaceChildren(s);
+}
+
+function histChart(club) {
+  const seasons = ["2020/21","2021/22","2022/23","2023/24","2024/25","2025/26","2026/27"];
+  const byS = Object.fromEntries(club.history.map(h => [h.season, h.points_pg]));
+  const W = 540, H = 250, L = 34, R = 22, T = 18, B = 30, max = 3;
+  const s = svg(W, H, "Points per game by season"), x = i => L + (W - L - R) * i / (seasons.length - 1), y = v => T + (H - T - B) * (1 - v / max);
+  for (let v = 0; v <= 3; v += 0.5) { el("line", {x1: L, x2: W - R, y1: y(v), y2: y(v), class: "gridl"}, s); el("text", {x: L - 8, y: y(v) + 4, "text-anchor": "end"}, s, fmt(v, 1)); }
+  seasons.forEach((ss, i) => el("text", {x: x(i), y: H - 8, "text-anchor": "middle", class: i === seasons.length - 1 ? "strong" : ""}, s, ss.replace("20", "")));
+  const lg = mean(DATA.clubs.map(c => c.summary.points_pg));
+  el("line", {x1: L, x2: W - R, y1: y(lg), y2: y(lg), class: "ref"}, s);
+  el("text", {x: L + 6, y: y(lg) + 15, class: "halo"}, s, `League avg 26/27 · ${fmt(lg, 2)}`);
+  // Area + line, drawn per unbroken run
+  const runs = []; let cur = [];
+  seasons.forEach((ss, i) => { const v = byS[ss]; if (v == null) { if (cur.length) runs.push(cur); cur = []; } else cur.push([x(i), y(v)]); });
+  if (cur.length) runs.push(cur);
+  runs.forEach(r => {
+    if (r.length > 1) el("path", {d: `M${r[0][0]},${y(0)}` + r.map(p => `L${p[0]},${p[1]}`).join("") + `L${r[r.length - 1][0]},${y(0)}Z`, fill: "var(--accent-wash)"}, s);
+    el("path", {d: r.map((p, i) => `${i ? "L" : "M"}${p[0]},${p[1]}`).join(""), fill: "none", stroke: "var(--s1)", "stroke-width": 2.2, "stroke-linejoin": "round", "stroke-linecap": "round"}, s);
+  });
+  const vals = seasons.map(ss => byS[ss]).filter(v => v != null), best = Math.max(...vals);
+  seasons.forEach((ss, i) => { const v = byS[ss]; if (v == null) return;
+    const last = i === seasons.length - 1, isBest = v === best && !last;
+    el("circle", {cx: x(i), cy: y(v), r: last ? 6 : 4, fill: last ? "var(--s1)" : "var(--surface)", stroke: "var(--s1)", "stroke-width": 2, "data-tip": `${ss}: ${fmt(v, 2)} points per game`}, s);
+    if (last) el("text", {x: x(i) - 10, y: y(v) - 12, "text-anchor": "end", class: "acc halo"}, s, `${fmt(v, 2)} now`);
+    if (isBest) el("text", {x: x(i), y: y(v) - 12, "text-anchor": "middle", class: "strong halo"}, s, `best ${fmt(v, 2)}`);
+  });
+  $("#histChart").replaceChildren(s);
+}
+
+const RANK_ROWS = [
+  ["rank_xg_for_pg","xG created per game","xg_for_pg",2], ["rank_big_chances_for_pg","Big chances created","big_chances_for_pg",1],
+  ["rank_box_touches_pg","Touches in opposition box","box_touches_pg",1], ["rank_finishing_delta","Finishing (goals − xG)","finishing_delta",1],
+  ["rank_possession","Possession %","possession",1], ["rank_pass_accuracy","Pass accuracy %","pass_accuracy",1],
+  ["rank_xg_against_pg","xG conceded per game","xg_against_pg",2], ["rank_big_chances_against_pg","Big chances conceded","big_chances_against_pg",1],
+  ["rank_shots_against_pg","Shots conceded per game","shots_against_pg",1], ["rank_shot_stopping_delta","Shot stopping (xGOT − goals)","shot_stopping_delta",1],
+  ["rank_set_piece_xg_against","Set-piece xG conceded","set_piece_xg_against",2], ["rank_xpts","Expected points","xpts",1],
+];
+function rankChart(club) {
+  const sm = club.summary, W = 540, rowH = 25, L = 192, R = 40, T = 28, H = T + RANK_ROWS.length * rowH + 22;
+  const s = svg(W, H, "League rank on each team measure"), x = r => L + (W - L - R) * (r - 1) / 19;
+  const bandTop = T - 8, bandH = RANK_ROWS.length * rowH + 8;
+  el("rect", {x: x(1) - 8, y: bandTop, width: x(4) - x(1) + 16, height: bandH, fill: "var(--accent-wash)"}, s);
+  el("rect", {x: x(14.5), y: bandTop, width: x(20) - x(14.5) + 8, height: bandH, fill: "color-mix(in srgb, var(--crit) 10%, transparent)"}, s);
+  el("text", {x: x(2.5), y: H - 6, "text-anchor": "middle", class: "acc"}, s, "TOP 4");
+  el("text", {x: x(17.5), y: H - 6, "text-anchor": "middle", style: "fill:var(--crit);font-weight:600"}, s, "BOTTOM 6");
+  [1, 5, 10, 15, 20].forEach(r => { el("text", {x: x(r), y: 12, "text-anchor": "middle"}, s, r === 1 ? "1st" : r === 20 ? "20th" : r); });
+  const sec = [["ATTACK", 0], ["CONTROL", 4], ["DEFENCE", 6], ["OVERALL", 11]];
+  RANK_ROWS.forEach(([rk, label, val, d], i) => {
+    const cy = T + rowH * i + rowH / 2, r = sm[rk], bad = r >= 15, good = r <= 4;
+    if (sec.some(z => z[1] === i) && i) el("line", {x1: 0, x2: W, y1: cy - rowH / 2, y2: cy - rowH / 2, class: "gridl"}, s);
+    el("text", {x: 0, y: cy + 4, class: "lab"}, s, label);
+    el("line", {x1: x(1), x2: x(20), y1: cy, y2: cy, class: "axis"}, s);
+    el("line", {x1: x(1), x2: x(r), y1: cy, y2: cy, stroke: bad ? "var(--crit)" : "var(--s1)", "stroke-width": 2, opacity: .45}, s);
+    el("circle", {cx: x(r), cy, r: 6.5, fill: bad ? "var(--crit)" : "var(--s1)", stroke: "var(--surface)", "stroke-width": 2.5, "data-tip": `${label}: ${fmt(sm[val], d)} · ranked ${r} of 20`}, s);
+    el("text", {x: W - R + 12, y: cy + 4, class: bad ? "" : good ? "acc" : "strong", style: bad ? "fill:var(--crit);font-weight:600" : ""}, s, ordinal(r));
+  });
+  $("#rankChart").replaceChildren(s);
+}
+
+function leagueChart(club) {
+  const pts = DATA.clubs.map(c => ({c, x: c.summary.xg_for_pg, y: c.summary.xg_against_pg}));
+  const W = 540, H = 340, L = 58, R = 18, T = 30, B = 40;
+  const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
+  const x0 = Math.floor(Math.min(...xs) * 4) / 4, x1 = Math.ceil(Math.max(...xs) * 4) / 4;
+  const y0 = Math.floor(Math.min(...ys) * 4) / 4, y1 = Math.ceil(Math.max(...ys) * 4) / 4;
+  const s = svg(W, H, "xG created vs conceded, all clubs"), X = v => L + (W - L - R) * (v - x0) / (x1 - x0), Y = v => T + (H - T - B) * (v - y0) / (y1 - y0); // less conceded = higher
+  for (let v = x0; v <= x1 + 1e-9; v += 0.25) { el("line", {x1: X(v), x2: X(v), y1: T, y2: H - B, class: "gridl"}, s); el("text", {x: X(v), y: H - B + 16, "text-anchor": "middle"}, s, fmt(v, 2)); }
+  for (let v = y0; v <= y1 + 1e-9; v += 0.25) { el("line", {x1: L, x2: W - R, y1: Y(v), y2: Y(v), class: "gridl"}, s); el("text", {x: L - 8, y: Y(v) + 4, "text-anchor": "end"}, s, fmt(v, 2)); }
+  const mx = mean(xs), my = mean(ys);
+  el("line", {x1: X(mx), x2: X(mx), y1: T, y2: H - B, class: "ref"}, s);
+  el("line", {x1: L, x2: W - R, y1: Y(my), y2: Y(my), class: "ref"}, s);
+  el("text", {x: W - R, y: 12, "text-anchor": "end", class: "acc"}, s, "BETTER: CREATE MORE, CONCEDE LESS ↗");
+  el("text", {x: X(mx) + 5, y: H - B - 8, class: ""}, s, `avg ${fmt(mx, 2)}`);
+  el("text", {x: (L + W - R) / 2, y: H - 4, "text-anchor": "middle", class: "lab"}, s, "xG created per game →");
+  el("text", {x: 14, y: T + (H - T - B) / 2, transform: `rotate(-90 14 ${T + (H - T - B) / 2})`, "text-anchor": "middle", class: "lab"}, s, "xG conceded per game (fewer ↑)");
+  pts.sort((a, b) => (a.c.code === club.code) - (b.c.code === club.code)).forEach(p => {
+    const sel = p.c.code === club.code;
+    if (sel) el("circle", {cx: X(p.x), cy: Y(p.y), r: 15, fill: "var(--accent-wash)", stroke: "var(--accent)", "stroke-width": 1, opacity: .9}, s);
+    el("circle", {cx: X(p.x), cy: Y(p.y), r: sel ? 7 : 4.5, fill: sel ? "var(--s1)" : "var(--ref)", opacity: sel ? 1 : .55, stroke: "var(--surface)", "stroke-width": 2,
+      "data-tip": `${esc(p.c.name)} (${ordinal(p.c.summary.position)})<br>xG ${fmt(p.x, 2)} for · ${fmt(p.y, 2)} against`}, s);
+    el("text", {x: X(p.x) + (sel ? 19 : 8), y: Y(p.y) + 4, class: sel ? "acc halo" : "halo", style: sel ? "font-size:13px;font-weight:700" : "font-size:10px;opacity:.75"}, s, p.c.short);
+  });
+  $("#leagueChart").replaceChildren(s);
+}
+
+function tiles(club) {
+  const sm = club.summary, pv = club.previous;
+  const pn = v => v > 0.05 ? "pos" : v < -0.05 ? "neg" : "";
+  const tiles = [
+    ["League position", ordinal(sm.position), `${sm.points} pts from ${sm.played} games`, ""],
+    ["Expected points", fmt(sm.xpts, 1), `${sign(sm.points - sm.xpts)} actual vs expected`, ""],
+    ["xG created / game", fmt(sm.xg_for_pg, 2), pv ? `2025/26: ${fmt(pv.xg_for_pg, 2)}` : "Promoted club", ""],
+    ["xG conceded / game", fmt(sm.xg_against_pg, 2), pv ? `2025/26: ${fmt(pv.xg_against_pg, 2)}` : "Promoted club", ""],
+    ["Finishing", sign(sm.finishing_delta), "goals minus xG", pn(sm.finishing_delta)],
+    ["Shot stopping", sign(sm.shot_stopping_delta), "xG on target faced minus goals", pn(sm.shot_stopping_delta)],
+  ];
+  $("#tiles").innerHTML = tiles.map(([l, v, d, c]) => `<div class="tile"><span class="l">${l}</span><span class="v ${c}">${v}</span><span class="d">${d}</span></div>`).join("");
+  stagger($("#tiles"));
+}
+
+// --- Step 2: squad table ----------------------------------------------------
+let squadSort = {key: null, dir: -1}, season = "cur";
+const SEASON_TAG = {cur: "26/27", prev: "25/26", "2s": "25/26 + 26/27"};
+function squadTable(club) {
+  const t2 = SEASON_TAG[season];
+  const cols = [
+    ["web_name","Player","pl"], ["role","Role",""], ["age","Age","n"],
+    [season === "2s" ? "rating" : `rating_${season}`,`Rating ${t2}`,"n"], [season === "2s" ? "role_percentile" : `role_percentile_${season}`,`Role pct ${t2}`,"n"],
+    [`starts_${season}`,`Starts ${t2}`,"n"], [`goals_scored_${season}`,`Goals ${t2}`,"n"], [`assists_${season}`,`Assists ${t2}`,"n"],
+    [`clean_sheets_${season}`,`Clean sheets ${t2}`,"n"],
+  ].concat(season === "prev" ? [["ext_rating_2025_26","Match rating 25/26","n"]] : []);
+  let rows = club.squad.filter(p => p.minutes_raw_total > 0 || p.minutes_current > 0);
+  const head = `<thead><tr>${cols.map(([k, l, c]) => `<th class="${c}${squadSort.key === k ? " sorted" : ""}" data-sort="${k}" scope="col" tabindex="0" aria-sort="${squadSort.key === k ? (squadSort.dir < 0 ? "descending" : "ascending") : "none"}">${l}${squadSort.key === k ? (squadSort.dir < 0 ? " ↓" : " ↑") : ""}</th>`).join("")}</tr></thead>`;
+  const statusTxt = p => p.status === "a" ? "" : p.status === "i" ? "Injured" : p.status === "d" ? "Doubtful" : p.status === "s" ? "Suspended" : p.status === "u" ? "Unavailable" : "";
+  const cell = (p, k) => {
+    if (k.startsWith("rating")) return p[k] == null ? "–" : `<span class="rbar">${fmt(p[k])}<span class="tr"><i class="${p[k] < 40 ? "lo" : ""}" style="width:${Math.max(2, Math.min(100, p[k]))}%"></i></span></span>`;
+    if (k.startsWith("role_percentile")) return p[k] == null ? "–" : fmt(p[k], 0);
+    if (k === "role") {
+      if (!ROLE[p.role]) return "";
+      const moved = p.plays && p.plays !== p.role;
+      const tip = `${ROLE[p.role]}<br>${p.sub_position ? "Listed position: " + esc(p.sub_position) : "No listed position; role from playing style"}${moved ? `<br>Starts this season as ${ROLE[p.plays].toLowerCase()}` : ""}`;
+      return `<span class="rmv" data-tip="${tip}">${p.role}${moved ? ` <span class="arr">→</span> ${p.plays}` : ""}</span>`;
+    }
+    if (k.startsWith("clean_sheets_")) return ["GK", "CB", "FB"].includes(p.role) ? Math.round(p[k] ?? 0) : "–";
+    if (k === "price_m") return fmt(p.price_m, 1);
+    if (k === "age") return p.age == null ? "–" : Math.floor(p.age);
+    if (k === "market_value_m") return p.market_value_m == null ? "–" : fmt(p.market_value_m, p.market_value_m < 10 ? 1 : 0);
+    if (k === "contract_until") return p.contract_until ? p.contract_until.slice(0, 4) : "–";
+    if (k === "ext_rating_2025_26") return fmt(p.ext_rating_2025_26, 2);
+    if (k === "status") return esc(statusTxt(p));
+    if (k === "web_name") return esc(p.web_name);
+    return p[k] == null ? "–" : Math.round(p[k]);
+  };
+  let body = "";
+  if (squadSort.key) {
+    rows = [...rows].sort((a, b) => ((a[squadSort.key] ?? -1e9) > (b[squadSort.key] ?? -1e9) ? 1 : -1) * squadSort.dir);
+    body = rows.map(p => `<tr>${cols.map(([k, , c]) => `<td class="${c}">${cell(p, k)}</td>`).join("")}</tr>`).join("");
+  } else {
+    for (const r of ROLE_ORDER) {
+      const g = rows.filter(p => p.role === r).sort((a, b) => b.minutes_current - a.minutes_current || b.rating - a.rating);
+      if (!g.length) continue;
+      body += `<tr class="rolehead"><td colspan="${cols.length}"><span class="rc">${r}</span>${ROLE[r]}</td></tr>` + g.map(p => `<tr>${cols.map(([k, , c]) => `<td class="${c}">${cell(p, k)}</td>`).join("")}</tr>`).join("");
+    }
+  }
+  const t = $("#squadTable"); t.innerHTML = head + `<tbody>${body}</tbody>`;
+  t.querySelectorAll("th[data-sort]").forEach(th => {
+    const go = () => {
+      const k = th.dataset.sort;
+      if (squadSort.key === k) { squadSort.dir === -1 ? squadSort.dir = 1 : (squadSort = {key: null, dir: -1}); }
+      else squadSort = {key: k, dir: -1};
+      squadTable(club);
+      const again = t.querySelector(`th[data-sort="${k}"]`); again && again.focus();
+    };
+    th.onclick = go;
+    th.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } };
+  });
+}
+
+// --- Step 3: needs ------------------------------------------------------------
+const PRIORITY_COL = {Critical: "var(--crit)", High: "var(--high)", Moderate: "var(--mod)", Low: "var(--low)"};
+const SEV_CLS = {Critical: "crit", High: "high", Moderate: "mod", Low: "low"};
+const sevTag = label => `<span class="sev ${SEV_CLS[label]}"><span class="meter" aria-hidden="true"><i></i><i></i><i></i><i></i></span>${label}</span>`;
+const pad2 = n => String(n).padStart(2, "0");
+const roleSlug = r => "need-" + r.replace("/", "");
+function needList(club) {
+  $("#sevBoard").innerHTML = club.needs.map(n =>
+    `<a href="#${roleSlug(n.role)}" class="${SEV_CLS[n.priority_label]}" aria-label="${n.need_rank}. ${ROLE[n.role]}: ${n.priority_label}, ${n.needs_signing ? "sign" : "hold"}"><span class="rk">#${pad2(n.need_rank)}</span><span class="tag${n.needs_signing ? " sign" : ""}">${n.needs_signing ? "Sign" : "Hold"}</span><span class="ro">${n.role}</span><span class="rn">${ROLE[n.role]}</span>${sevTag(n.priority_label)}</a>`).join("");
+  stagger($("#sevBoard"));
+  $("#needList").innerHTML = club.needs.map(n => {
+    const b = n.brief;
+    return `<article class="need ${SEV_CLS[n.priority_label]}" id="${roleSlug(n.role)}">
+      <div class="side"><span class="rkn">${pad2(n.need_rank)}</span><div class="nm">${ROLE[n.role]}</div>${sevTag(n.priority_label)}<span class="tiny">${n.needs_signing ? "Sign: targets in step 4" : "Hold: no signing now"}</span></div>
+      <div class="body">
+        <p class="hl">${esc(b.headline)}</p>
+        <ul class="flags">${b.evidence.map(e => `<li>${esc(e)}</li>`).join("")}</ul>
+        ${b.team.text ? `<p class="ctx ${b.team.tone}">${esc(b.team.text)}</p>` : ""}
+        <p class="act"><b>${n.priority === 0 ? "Verdict" : "What to do"}</b><span>${esc(b.action)}</span></p>
+      </div>
+    </article>`;
+  }).join("");
+  stagger($("#needList"));
+}
+const ordinal = n => n + (n % 100 >= 11 && n % 100 <= 13 ? "th" : ({1: "st", 2: "nd", 3: "rd"}[n % 10] || "th"));
+
+// --- Step 4: targets --------------------------------------------------------------
+function targetList(club) {
+  const groups = club.needs.filter(n => n.needs_signing).map(n => ({n, t: club.targets.filter(t => t.need_role === n.role)}));
+  const hold = club.needs.filter(n => !n.needs_signing);
+  const head = n => `<div class="ghead"><span class="gn">${n.role}</span><h3>${ROLE[n.role]} ${sevTag(n.priority_label)}</h3>`;
+  const empty = n => n.contested && n.contested.length
+    ? `The only Premier League ${ROLE[n.role].toLowerCase()}s who clear every filter for ${esc(club.name)} (${esc(n.contested.join(", "))}) are already on the shortlists of clubs with a more urgent need. Look abroad for this one.`
+    : `No Premier League player clears every filter for this role: better players either cost more than ${esc(club.name)}'s price structure allows or play for clearly stronger clubs. This is a role to fill from abroad.`;
+  const group = ({n, t}) => {
+    if (!t.length) return `<div class="tgroup">${head(n)}<p class="ctxl">No candidate on the shortlist.</p></div><p class="note">${empty(n)}</p></div>`;
+    return `<div class="tgroup">${head(n)}<p class="ctxl">${n.weakest_starter ? `Would replace the weakest starter, <b>${esc(n.weakest_starter)}</b> (rated <span class="mono">${fmt(n.weakest_starter_rating)}</span>)` : `Nobody plays here regularly, so any of these would start`}</p></div>
+      <div class="cards anim">${t.map((p, i) => card(p, i, n)).join("")}</div></div>`;
+  };
+  const holdTxt = hold.length ? `<p class="note"><b>No signing needed at:</b> ${hold.map(n => `${ROLE[n.role]} (${n.priority_label})`).join(", ")}. Step 3 explains each one.</p>` : "";
+  $("#targetList").innerHTML = (groups.length ? groups.map(group).join("") : `<p class="note">No position at ${esc(club.name)} needs a signing on these numbers.</p>`) + holdTxt;
+  document.querySelectorAll("#targetList .cards").forEach(stagger);
+}
+const plural = (v, w) => { const n = Math.round(v ?? 0); return `${n} ${w}${n === 1 ? "" : "s"}`; };
+const club_name_of = p => (DATA.clubs.find(c => c.targets.includes(p)) || {}).name || "club";
+function card(p, i, n) {
+  const stats = DATA.role_key_stats[p.need_role];
+  const inc = p.incumbent_stats || DATA.role_averages[p.need_role] || {};
+  const incName = p.incumbent_stats ? (p.replaces || "Incumbent") : "League average for the role";
+  const cmp = stats.map(k => {
+    const a = p[k], b = inc[k], hi = (k.includes("pct") || k === "pass_accuracy") ? 100 : Math.max(a ?? 0, b ?? 0, 1e-6) * 1.1;
+    const neg = k === "finishing_p90" || k === "goals_prevented_p90";
+    const w = v => v == null ? 0 : neg ? Math.min(100, Math.max(2, 50 + v / (Math.max(Math.abs(a ?? 0), Math.abs(b ?? 0), 0.01) * 2.2) * 100)) : Math.max(2, v / hi * 100);
+    return `<span class="lbl">${esc(LBL[k] || k)}</span><span class="pair" data-tip="${esc(p.web_name)}: ${fmt(a, 2)}<br>${esc(incName)}: ${fmt(b, 2)}">
+      <i class="b t" style="width:${w(a)}%"></i><i class="b r" style="width:${w(b)}%"></i>
+      <span class="vals"><b>${fmt(a, 2)}</b> vs ${fmt(b, 2)}</span></span>`;
+  }).join("");
+  const injured = p.status && p.status !== "a" ? `<div class="wide warnc"><dt>Fitness</dt><dd>${esc(p.news || "Fitness doubt")}</dd></div>` : "";
+  const dfb = ["GK", "CB", "FB"].includes(p.need_role);
+  return `<article class="card${i === 0 ? " first" : ""}">
+    <div class="top"><div><span class="rank">Target #${i + 1}</span><h4>${esc(p.first_name ? p.first_name + " " + p.second_name : p.web_name)}</h4><span class="sub">${esc(p.team)} · ${ROLE[p.role]}</span></div>
+      <div class="scorebox" data-tip="Target score out of 100"><span class="score">${fmt(p.target_score, 0)}</span><span class="sbar"><i style="width:${Math.max(0, Math.min(100, p.target_score))}%"></i></span><span class="slab">Score /100</span></div></div>
+    <dl class="spec" style="margin:0">
+      <div data-tip="Role rating vs the weakest current starter"><dt>Rating vs starter</dt><dd>${fmt(p.rating)} <span class="muted">vs ${fmt(p.replaces_rating)}</span> <span class="up">${sign(p.upgrade)}</span></dd></div>
+      <div data-tip="Percentile among players whose main role this is"><dt>Role standing</dt><dd>${Math.round(p.role_percentile) >= 75 ? `Top ${Math.max(1, 100 - Math.round(p.role_percentile))}%` : `${ordinal(Math.round(p.role_percentile))} pct`}</dd></div>
+      <div data-tip="How closely the player's profile matches how this club uses the role"><dt>Style fit</dt><dd>${fmt(p.style_fit * 100, 0)}%</dd></div>
+      <div data-tip="Age on ${DATA.generated}"><dt>Age</dt><dd>${p.age == null ? "n/a" : Math.floor(p.age)}</dd></div>
+      <div data-tip="Transfermarkt market value${p.value_cap_m ? `; ${esc(club_name_of(p))} ceiling €${fmt(p.value_cap_m, 0)}m` : ""}"><dt>${p.market_value_m == null ? "FPL price" : "Market value"}</dt><dd>${p.market_value_m == null ? `£${fmt(p.price_m, 1)}m` : `€${fmt(p.market_value_m, 0)}m`}</dd></div>
+      <div data-tip="Contract expiry (Transfermarkt)"><dt>Contract</dt><dd>${p.contract_until ? "to " + p.contract_until.slice(0, 4) : "–"}</dd></div>
+      <div class="wide" data-tip="Premier League totals, 2025/26 and 2026/27 combined"><dt>Output, 25/26 + 26/27</dt><dd>${dfb ? `${Math.round(p.clean_sheets_2s ?? 0)} clean sheets` : `${plural(p.goals_scored_2s, "goal")}, ${plural(p.assists_2s, "assist")}`} in ${Math.round(p.starts_2s ?? 0)} starts · ${Math.round(p.minutes_raw_total)} mins behind the rating</dd></div>
+      ${injured}
+    </dl>
+    <div class="cmpw">
+      <div class="legend"><span><i class="key" style="background:var(--s1)"></i>${esc(p.web_name)}</span><span><i class="key" style="background:var(--s2)"></i>${esc(incName)}</span><span class="tiny">Per 90, 25/26 + 26/27</span></div>
+      <div class="cmp">${cmp}</div>
+    </div>
+    <div class="rep">
+      <span class="eyebrow">Scouting report</span>
+      <p class="report">${esc(p.report)}</p>
+    </div>
+  </article>`;
+}
+
+// --- Method -------------------------------------------------------------------
+function method() {
+  const v = DATA.validation;
+  $("#valRho").textContent = fmt(v.spearman, 2);
+  $("#valSub").textContent = `${v.n} regulars with 900+ minutes in both sources. Spearman rank correlation ${v.spearman} overall: our role ratings and the provider's match ratings agree, but not perfectly, because the match rating also rewards team results and our rating compares players only within their role.`;
+  const W = 540, H = 290, L = 58, R = 14, T = 14, B = 38;
+  const ys = v.points.map(p => p[1]);
+  const x0 = 20, x1 = 80, y0 = Math.floor(Math.min(...ys) * 10) / 10, y1 = Math.ceil(Math.max(...ys) * 10) / 10;
+  const s = svg(W, H, "Our rating vs provider match rating"), X = a => L + (W - L - R) * (a - x0) / (x1 - x0), Y = b => T + (H - T - B) * (1 - (b - y0) / (y1 - y0));
+  for (let a = x0; a <= x1; a += 10) { el("line", {x1: X(a), x2: X(a), y1: T, y2: H - B, class: "gridl"}, s); el("text", {x: X(a), y: H - B + 16, "text-anchor": "middle"}, s, a); }
+  for (let b = Math.ceil(y0 * 4) / 4; b <= y1; b += 0.25) { el("line", {x1: L, x2: W - R, y1: Y(b), y2: Y(b), class: "gridl"}, s); el("text", {x: L - 8, y: Y(b) + 4, "text-anchor": "end"}, s, fmt(b, 2)); }
+  el("line", {x1: X(50), x2: X(50), y1: T, y2: H - B, class: "ref"}, s);
+  el("text", {x: X(50) + 5, y: T + 10}, s, "role average");
+  el("text", {x: (L + W - R) / 2, y: H - 4, "text-anchor": "middle", class: "lab"}, s, "Our role rating →");
+  el("text", {x: 14, y: T + (H - T - B) / 2, transform: `rotate(-90 14 ${T + (H - T - B) / 2})`, "text-anchor": "middle", class: "lab"}, s, "Match rating 25/26 →");
+  v.points.forEach(([a, b, r]) => el("circle", {cx: X(Math.max(x0, Math.min(x1, a))), cy: Y(b), r: 3.6, fill: "var(--s1)", opacity: .55, stroke: "var(--surface)", "stroke-width": 1, "data-tip": `${ROLE[r]}<br>Our rating ${fmt(a)} · match rating ${fmt(b, 2)}`}, s));
+  $("#valChart").replaceChildren(s);
+  $("#valTable").innerHTML = `<thead><tr><th>Role</th><th class="n">Players</th><th class="n">Spearman</th></tr></thead><tbody>` +
+    ROLE_ORDER.filter(r => v.by_role[r]).map(r => `<tr><td>${ROLE[r]}</td><td class="n">${v.by_role[r].n}</td><td class="n">${fmt(v.by_role[r].spearman, 2)}<span class="wbar"><i style="width:${Math.max(0, v.by_role[r].spearman) * 100}%"></i></span></td></tr>`).join("") + "</tbody>";
+  const sw = DATA.score_weights, desc = {upgrade: "Rating gain over the weakest starter (capped at +20)", quality: "Percentile within the role", style_fit: "Profile similarity to how the club uses the role", value: "Rating gain per €m of market value (square root)", age: "Age: full marks 21–28, falling to 0.1 at 34", reliability: "Minutes behind the rating (capped at 2,500)", realism: "Whether the selling club is clearly stronger"};
+  $("#scoreTable").innerHTML = `<thead><tr><th>Component</th><th class="n">Weight</th></tr></thead><tbody>` +
+    Object.entries(sw).map(([k, w]) => `<tr><td style="white-space:normal">${desc[k]}</td><td class="n">${Math.round(w * 100)}%<span class="wbar"><i style="width:${w / 0.3 * 100}%"></i></span></td></tr>`).join("") + "</tbody>";
+}
+
+// --- Step rail: scroll-spy and progress ----------------------------------------
+const STEP_IDS = ["team", "squad", "needs", "targets", "method"];
+function spy() {
+  const probe = 140;
+  let cur = STEP_IDS[0];
+  for (const id of STEP_IDS) { const r = document.getElementById(id).getBoundingClientRect(); if (r.top - probe <= 0) cur = id; }
+  const idx = STEP_IDS.indexOf(cur);
+  document.querySelectorAll("#steps a").forEach(a => {
+    const i = STEP_IDS.indexOf(a.getAttribute("href").slice(1));
+    if (i === idx) a.setAttribute("aria-current", "step"); else a.removeAttribute("aria-current");
+    a.classList.toggle("done", i < idx);
+  });
+  const max = document.documentElement.scrollHeight - innerHeight;
+  $("#prog").style.width = (max > 0 ? Math.min(100, scrollY / max * 100) : 0) + "%";
+}
+let spyQueued = false;
+addEventListener("scroll", () => { if (!spyQueued) { spyQueued = true; requestAnimationFrame(() => { spyQueued = false; spy(); }); } }, {passive: true});
+addEventListener("resize", spy);
+
+// --- Wiring -------------------------------------------------------------------
+function render(code) {
+  const club = DATA.clubs.find(c => c.code === code) || DATA.clubs[0];
+  $("#club").value = club.code;
+  $("#teamTitle").innerHTML = `${esc(club.name)} <span class="pos">${ordinal(club.summary.position)}</span> after ${club.summary.played} games`;
+  $("#teamSub").textContent = `${club.summary.won} won, ${club.summary.drawn} drawn, ${club.summary.lost} lost · goals ${club.summary.goals_for}–${club.summary.goals_against} · xG ${fmt(club.summary.xg_for, 1)}–${fmt(club.summary.xg_against, 1)}${club.squad_value_m ? ` · squad value €${fmt(club.squad_value_m, 0)}m · minutes-weighted age ${fmt(club.squad_age, 1)} · signing ceiling about €${fmt(club.value_cap_m, 0)}m` : ""}`;
+  tiles(club); gwChart(club); histChart(club); rankChart(club); leagueChart(club);
+  squadSort = {key: null, dir: -1}; squadTable(club); needList(club); targetList(club);
+  try { localStorage.setItem("scout-club", club.code); } catch (e) {}
+  spy();
+}
+$("#stamp").textContent = `${DATA.season.replace("-", "/")} · data through GW${DATA.gameweeks} · built ${DATA.generated}`;
+$("#club").innerHTML = [...DATA.clubs].sort((a, b) => a.summary.position - b.summary.position).map(c => `<option value="${c.code}">${c.summary.position}. ${esc(c.name)} · ${c.summary.points} pts</option>`).join("");
+$("#club").onchange = e => render(+e.target.value);
+document.querySelectorAll("#seasonSeg button").forEach(b => b.onclick = () => {
+  season = b.dataset.s; squadSort = {key: null, dir: -1};
+  document.querySelectorAll("#seasonSeg button").forEach(x => x.setAttribute("aria-pressed", x === b));
+  squadTable(DATA.clubs.find(c => c.code === +$("#club").value));
+});
+method();
+let start = DATA.clubs[0].code;
+try { const saved = +localStorage.getItem("scout-club"); if (DATA.clubs.some(c => c.code === saved)) start = saved; } catch (e) {}
+render(start);
+</script>
