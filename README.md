@@ -9,7 +9,7 @@ An AI-assisted recruitment model for all 20 Premier League clubs in 2026/27. For
 
 Everything is computed from data. Transfer rumours play no part.
 
-**Live dashboard:** https://shubhs1111.github.io/pl-scout-ai/ (the same page is in `outputs/premier-league-scouting-lab.html`; open it in any browser).
+**Live dashboard:** https://shubhs1111.github.io/AI_PremierLeague_Scout/ (the same page is in `outputs/premier-league-scouting-lab.html`; open it in any browser).
 
 ## Run it
 
